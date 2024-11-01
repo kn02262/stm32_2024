@@ -88,7 +88,7 @@ void Display_Init(){
 	SPI1_Init();
 	// Настройка PORTA, PA1..3 на выход, General purpose output push-pull
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-	GPIOA->CRL = ~(GPIO_CRL_CNF1 | GPIO_CRL_MODE1 | 
+	GPIOA->CRL &= ~(GPIO_CRL_CNF1 | GPIO_CRL_MODE1 | 
 		GPIO_CRL_CNF2 | GPIO_CRL_MODE2 |
 		GPIO_CRL_CNF3 | GPIO_CRL_MODE3);
 	GPIOA->CRL |= GPIO_CRL_MODE1_0 |
@@ -104,27 +104,13 @@ void Display_Init(){
    GPIOA->ODR |= GPIO_ODR_ODR2; // RESET=1
    delay_us(1000); // Wait <1ms
 
-	/* LCD bias setting (11) */
-	cmd(0b10100011); //1/7 bias
-	/* ADC selection */
-	cmd(0b10100000);
-	/* Common output mode selection */
-	cmd(0b11000000);
-	/* Power control mode */
-	cmd(0x28 | 0b111);  //0b111
-	/* Vo regulator resistor ratio (check) */
-	uint8_t resRatio = 0x04;
-	cmd(0b00100000 | resRatio);
-  	cmd(0xA6); // Normal color, A7 = inverse color
-  	cmd(0xAF); // Display on
-
-   /*cmd(0xA2); //LCD Drive set 1/9 bias
+   cmd(0xA2); //LCD Drive set 1/9 bias
    cmd(0xA0); // RAM Address SEG Output normal
    cmd(0xC8); // Common output mode selection
    cmd(0x28 | 0x07); // Power control mode
    cmd(0x20 | 0x05); // Voltage regulator
    cmd(0xA6); // Normal color, A7 = inverse color
-   cmd(0xAF); // Display on*/
+   cmd(0xAF); // Display on
 	
 }
 
