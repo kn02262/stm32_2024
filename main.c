@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <stm32f10x.h>
 
+#define LCD_H 8
+#define LCD_W 128
+
 void delay_us(uint32_t us) {
 	__asm volatile (
 		"push {r0}\r\n"
@@ -114,6 +117,17 @@ void Display_Init(){
 	
 }
 
+void Display_blank(){
+	for(int i=0; i<LCD_H; i++){
+		cmd(0b10110000 | i); // Page adress select
+		cmd(0b00010000);
+		cmd(0b00000000);
+		for(int j=0; j<LCD_W; j++){
+			dat(0x00);
+		}
+	}
+}
+
 
 
 
@@ -133,12 +147,8 @@ int __attribute((noreturn)) main(void) {
 	SPI1_Init();
 	// Инициализация дисплея
 	Display_Init();
-	cmd(0b10110000);
-	cmd(0b00010000);
-	cmd(0x00);
-	for(int i=0; i<128; i++){
-		dat(0xFF);
-	}
+	// Инициализировать DRAM дисплея 0x00
+	Display_blank();
 	
 
 
