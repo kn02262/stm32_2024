@@ -1,9 +1,12 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stm32f10x.h>
 
 #define LCD_H 8
 #define LCD_W 128
 #define FONT_W 8
+
+uint8_t LCD_buf[LCD_H*LCD_W] = {0x00};
 
 const uint8_t font[256][FONT_W] = {
 {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},	// 0x00
@@ -385,39 +388,43 @@ void Display_Init(){
 	
 }
 
-void Display_blank(){
+void Display_LoadBuf(){
 	for(int i=0; i<LCD_H; i++){
 		cmd(0b10110000 | i); // Page adress select
 		cmd(0b00010000);
 		cmd(0b00000000);
 		for(int j=0; j<LCD_W; j++){
-			dat(0x00);
+			dat(LCD_buf[i*LCD_W + j]);
 		}
 	}
 }
 
 void Display_Print(char* Str, int StrLen, int x, int y){
 	int x_safe = (x / 8) & 0x0F;
-	cmd(0b10110000 | x_safe); // Page address select
-	cmd(0b00010000 | ((y >> 4) & 0x0F)); // Column address select
-	cmd(0b00000000 | (y & 0x0F));
-	int y_real = y;
+	int y_pos = y;
 	for(int i=0; i<StrLen; i++){
-		char c = Str[i];
-		if(y_real + FONT_W > LCD_W){
-			y_real = 0;
-			x_safe = (x_safe + 1) & 0x0F;
-			cmd(0b10110000 | x_safe); // Page address select
-			cmd(0b00010000); // Column address select
-			cmd(0b00000000);
+		uint8_t c = Str[i];
+		if(y_pos + FONT_W > LCD_W){
+			x_safe = (x_safe+1) & 0x0F;
+			y_pos = 0;
 		}
-		for(int j=0; j<FONT_W; j++)
-			dat(reverse(font[c][j]));
-		y_real += FONT_W;
+		for(int j=0; j<FONT_W; j++){
+			LCD_buf[x_safe*LCD_W+y_pos+j] = reverse(font[c][j]);
+		}
+		y_pos += FONT_W;
 	}
+	Display_LoadBuf();
 }
 
-
+void Display_DrawPixel(int x, int y, bool color){
+	int x_safe = (x / 8) & 0x0F;
+	if(color){
+		LCD_buf[x_safe*LCD_W + y] |= (1 << (x%8));
+	} else {
+		LCD_buf[x_safe*LCD_W + y] &= ~(1 << (x%8));
+	}
+	Display_LoadBuf();
+}
 
 
 int __attribute((noreturn)) main(void) {
@@ -436,12 +443,16 @@ int __attribute((noreturn)) main(void) {
 	SPI1_Init();
 	// Инициализация дисплея
 	Display_Init();
-	// Инициализировать DRAM дисплея 0x00
-	Display_blank();
+	// Send LCD_Buf to display RAM
+	Display_LoadBuf();
 
 	uint8_t MsgLen = 7;
 	char msg[] = "Very, VERY Long Message !!!!! 123456789";
 	Display_Print (&msg, sizeof(msg), 10, 100);
+
+	Display_DrawPixel(20,100, true);
+
+
 
 
     while (1) {
