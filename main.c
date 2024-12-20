@@ -466,10 +466,22 @@ void Display_Init(){
    cmd(0xA6); // Normal color, A7 = inverse color
    cmd(0b10100000); // ADC Select
    cmd(0xAF); // Display on
+   cmd(0b10100111); // Color invert mode
 	
 }
 
 void Display_LoadBuf(){
+	for(int i=0; i<LCD_H; i++){
+		cmd(0b10110000 | i); // Page adress select
+		cmd(0b00010000);
+		cmd(0b00000000);
+		for(int j=0; j<LCD_W; j++){
+			dat(LCD_buf[i*LCD_W + j]);
+		}
+	}
+}
+
+void Display_LoadBufArea(int x, int y, int w, int h){
 	for(int i=0; i<LCD_H; i++){
 		cmd(0b10110000 | i); // Page adress select
 		cmd(0b00010000);
@@ -518,7 +530,8 @@ void Display_printScore(int score){
 		digit_number += 1;
 		score = score / 10;
 	}
-	Display_LoadBuf();
+	//Display_LoadBuf();
+	Display_LoadBufArea(0,0,NUM_W,32);
 }
 
 
